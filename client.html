@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bibliothèquos</title>
+    <link rel="stylesheet" href="style.css">
+    
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+
+    <script>
+        const socket = io();
+
+// ====================================
+// 1. Gestion de la bibliothèque
+// ====================================
+        let livres = [];
+        
+        // chargement des livres du fichier JSON
+        function chargerLivres()
+        {
+            fetch("livres.json")
+                .then(response => response.json())
+                .then(data => {
+                    livres = data;
+                    console.log("Fichier JSON chargé :", livres);
+                    //initialiserBibliotheque(); test
+                })
+                .catch(err => console.error("Erreur JSON :", err));
+        }
+
+
+// ====================================
+// 2. Gestion des joueurs
+// ====================================
+        let numJoueur = -1;
+        let joueurCourant = -1;
+
+        function demandeJoueurs()
+        {
+            console.log('Demande des joueurs');
+            socket.emit('joueurs');
+        }
+
+        function entrerDansLaPartie()
+        {
+            let nom = nomJ.value;
+            if (nom && nom.trim()) {
+                console.log("Entrée de " + nom);
+                socket.emit('entree', nom);
+            }
+        }
+
+        function quitterLaPartie() 
+        {
+            let nom = nomJ.value;
+            if (nom && nom.trim()) {
+                console.log("Sortie de " + nom);
+                socket.emit('sortie', nom);
+            }
+        }
+
+
+// ====================================
+// 3. Gestion du chat
+// ====================================
+        function envoiMessage(input) 
+        {
+            if (input.value.trim()) {
+                console.log("Envoi du message :", input.value);
+                socket.emit("message", {
+                    'numJoueur': numJoueur,
+                    'texte': input.value
+                });
+            }
+        }
+
+        function ajouterMessage(message) 
+        {
+            let textarea = document.getElementById('messages');
+            textarea.value += (textarea.value ? '\n' : '') + message;
+            textarea.scrollTop = textarea.scrollHeight;
+        }
+
+
+// ====================================
+// 4. Écouteurs Socket.IO
+// ====================================
+        
+        // Événements liés aux joueurs
+        socket.on('joueurs', nomsJoueurs => {
+            console.log(`Noms des joueurs reçus du serveur : ${nomsJoueurs}`);
+            listeJoueurs.value = nomsJoueurs;
+        });
+
+        socket.on('entree', data => {
+            console.log("Le serveur confirme mon entrée avec numJoueur=" + data.numJoueur);
+            numJoueur = data.numJoueur;
+            btentree.disabled = true;
+            btsortie.disabled = false;
+            listeJoueurs.textContent = data.nomsJoueurs;
+            numJ.textContent = data.numJoueur;
+        });
+
+        socket.on('entreeAutreJoueur', data => {
+            console.log("Le serveur confirme l'entrée de " + data.nomJoueur);
+            ajouterMessage(`${data.nomJoueur} a rejoint la partie`);
+            listeJoueurs.textContent = data.nomsJoueurs;
+        });
+
+        socket.on('tour', data => {
+            joueurCourant = data.joueurCourant;
+            console.log("Nouveau tour, joueur courant =", joueurCourant);
+            document.getElementById('messageServeur')
+                    .textContent = "Au tour du joueur " + joueurCourant;
+        });
+
+
+        socket.on('sortie', data => {
+            console.log("Le serveur confirme ma sortie");
+            numJoueur = -1;
+            nomJ.value = "";
+            numJ.textContent = "";
+            btentree.disabled = false;
+            btsortie.disabled = true;
+            listeJoueurs.textContent = data.nomsJoueurs;
+            document.getElementById('messageServeur').textContent = "";
+        });
+
+        socket.on('sortieAutreJoueur', data => {
+            console.log(`Le serveur confirme la sortie de ${data.nomJoueur} de numéro ${data.numJoueur}`);
+            if (numJoueur > data.numJoueur) {
+                numJoueur--;
+                numJ.textContent = numJoueur;
+            }
+            ajouterMessage(`${data.nomJoueur} a quitté la partie`);
+            listeJoueurs.textContent = data.nomsJoueurs;
+            document.getElementById('messageServeur').textContent = "";
+        });
+
+        socket.on('message', message => {
+            console.log("Réception du message :", message);
+            ajouterMessage(message);
+            document.getElementById('message').value = "";
+        });
+
+        socket.on('messageServeur', message => {
+            console.log("Message serveur :", message);
+            document.getElementById('messageServeur').textContent = message;
+        });
+
+
+// ====================================
+// 5. Visu D3.js
+// ====================================
+        let tourActuel = 0;
+        let intervalTours = null;
+
+
+        // Configuration de la visualisation
+        const largeurLivre = 40;
+        const hauteurLivre = 80;
+        const marge = 10;
+        const nbEtagere = 4;
+        const nbAncrages = 6;
+        const largeurEtagere = nbAncrages * (largeurLivre + marge);
+        const couleurLivre = "#00008B";
+        const yBase = 100;
+        let livreSelec = null;
+
+        // Configuration des étagères
+        const etageres = [];
+        for (let i = 0; i < nbEtagere; i++) 
+        {
+            etageres.push({
+                id: i,
+                y: 70 + i * 120,
+                ancrages: [],
+                livres: new Array(nbAncrages).fill(null)   // un slot par ancrage
+            });
+        }
+
+        // Configuration de la caisse
+        const caisse = {
+            id: "caisse",
+            x: 500,
+            y: 500,
+            nbAncrages: 3,
+            ancrage: [],
+            livres: []
+        };
+
+        function dessinerEtageres() 
+        {
+            const svg = d3.select("#bibliotheque");
+            svg.selectAll(".etagere")//on selectionne les 4 "etageres" dans liste etagere
+                .data(etageres)
+                .enter()
+                .append("rect")
+                .attr("class", "etagere")
+                .attr("x", 50)
+                .attr("y", d => d.y)
+                .attr("width", largeurEtagere + marge)
+                .attr("height", 10)
+                .attr("fill", "#8b5a2b");
+        }
+
+        function dessinerAncrages() 
+        {
+            const svg = d3.select("#bibliotheque");
+            etageres.forEach(et => {
+                for (let i = 0; i < nbAncrages; i++) {
+                    const ancrX = 50 + i * (largeurLivre + marge) + largeurLivre / 2;
+                    const ancrY = et.y;
+                    
+                    et.ancrages.push({x: ancrX, y: ancrY, pleins: false});
+                    
+                    svg.append("circle")
+                        .attr("cx", ancrX)
+                        .attr("cy", ancrY)
+                        .attr("r", 3)
+                        .attr("fill", "#515151")
+                        .on("click", () => {
+                            if (livreSelec) {
+                                depoLivre(et, i);
+                            }
+                        });
+                }
+            });
+        }
+
+        function dessinerCaisse() 
+        {
+            const svg = d3.select("#bibliotheque");
+            svg.append("rect")
+                .attr("class", "caisse")
+                .attr("x", caisse.x)
+                .attr("y", caisse.y)
+                .attr("width", caisse.nbAncrages * (largeurLivre + marge))
+                .attr("height", 10)
+                .attr("fill", "#b87333");
+
+            for (let i = 0; i < caisse.nbAncrages; i++) {
+                const ancrX = caisse.x + i * (largeurLivre + marge) + largeurLivre / 2;
+                const ancrY = caisse.y;
+
+                caisse.ancrage.push({ x: ancrX, y: ancrY, pleins: false });
+
+                svg.append("circle")
+                    .attr("cx", ancrX)
+                    .attr("cy", ancrY)
+                    .attr("r", 3)
+                    .attr("fill", "#515151")
+                    .attr("cursor", "pointer")
+                    .on("click", () => {
+                        if (livreSelec) {
+                            depoLivre(caisse, i);
+                        }
+                    });
+            }
+        }
+
+        function remplirCaisse()
+        {
+            const svg = d3.select("#bibliotheque");
+
+            svg.selectAll(".livre")
+                .filter(function() {
+                    return this.ancrage && this.ancrage.id === "caisse";
+                })
+                .remove();
+            
+            const random_elem = d3.shuffle(livres).slice(0, 3);
+
+            random_elem.forEach((li, i) => {
+                const ancrage = caisse.ancrage[i];
+
+                const rect = svg.append("rect")
+                    .attr("class", "livre")
+                    .attr("x", ancrage.x - largeurLivre/2)
+                    .attr("y", ancrage.y - hauteurLivre)
+                    .attr("width", largeurLivre)
+                    .attr("height", hauteurLivre)
+                    .attr("fill", couleurLivre)
+                    .on("mouseover", function(event) {
+                        svg.append("text")
+                            .attr("id", "titre_temp")
+                            .attr("x", parseFloat(d3.select(this).attr("x")) + largeurLivre / 2)
+                            .attr("y", ancrage.y - hauteurLivre - 10)
+                            .text(li.titre + ", genre : "+ li.genre);
+                    })
+                    .on("mouseout", function() {
+                        svg.select("#titre_temp").remove();
+                    })
+                    .on("click", function() {
+                        svg.selectAll(".livre").classed("selected", false);
+                        d3.select(this).classed("selected", true);
+                        livreSelec = this;
+                    });
+
+                rect.node().ancrage = ancrage;
+                // stockage de livre sur le dom
+                rect.node().__dataLivre = li;
+            });
+;
+        }
+
+        function depoLivre(etagere, indexAncrage)
+        {
+            if (numJoueur !== joueurCourant) {
+                alert("Soit ce n'est pas votre tour, soit il n'y a pas assez de joueurs (ici 2 !)");    
+                return;
+            }
+
+            if (!livreSelec) return;   // si aucun livre sélectionné on fait rien
+
+            const ancrage = etagere.ancrages[indexAncrage];
+
+            if (ancrage.pleins)
+                return;
+
+            if (livreSelec.ancrage)
+                livreSelec.ancrage.pleins = false;
+
+            // recuperer le livre stocké dans le dom
+            const dataLivre = livreSelec.__dataLivre;
+
+            d3.select(livreSelec)
+                .attr("x", ancrage.x - largeurLivre / 2)
+                .attr("y", ancrage.y - hauteurLivre);
+
+            ancrage.pleins = true;
+            livreSelec.ancrage = ancrage;
+
+            etagere.livres[indexAncrage] = dataLivre;
+            const points = scoreAutourPosition(etagere, indexAncrage);
+            scoreTot();
+
+            socket.emit('coupJoue', { numJoueur });
+
+            livreSelec = null;
+            tourActuel++;
+            document.getElementById('tourActuel').textContent = tourActuel;
+        }
+
+        function scoreAutourPosition(etagere, index)
+        {
+            const livres = etagere.livres;
+            const livreCentral = livres[index];
+            if (!livreCentral) return 0;
+
+            let score = 0;
+
+            const gauche = index > 0 ? livres[index - 1] : null;
+            const droite = index < livres.length - 1 ? livres[index + 1] : null;
+
+            // meme genre
+            if (gauche && gauche.genre === livreCentral.genre) score += 3;
+            if (droite && droite.genre === livreCentral.genre) score += 3;
+
+            // meme auteur
+            if (gauche && gauche.nom === livreCentral.nom) score += 4;
+            if (droite && droite.nom === livreCentral.nom) score += 4;
+
+            // meme litterature
+            if (gauche && gauche.littérature === livreCentral.littérature) score += 5;
+            if (droite && droite.littérature === livreCentral.littérature) score += 5;
+
+            console.log("Score local autour de", index, "=", score);
+            return score;
+        }
+
+        function initialiserBibliotheque()
+        {
+            tourActuel = 1;
+            dessinerEtageres();
+            dessinerAncrages();
+            dessinerCaisse();
+            remplirCaisse();
+            document.getElementById('tourActuel').textContent = tourActuel;
+
+            if (intervalTours !== null)
+                clearInterval(intervalTours);
+
+            intervalTours = setInterval(() => {
+                tourActuel++;
+                document.getElementById('tourActuel').textContent = tourActuel;
+                remplirCaisse();
+            }, 10000);
+        }
+
+
+// ====================================
+// 6. Gestion du score 
+// ====================================
+
+    function score(etagere)
+    {
+        const livres = etagere.livres;
+        let score = 0;
+
+        if (livres.length <= 1)
+            return 0;
+    
+        let nbformat = {}; //on compte les nombres de format similaires
+        let nbGenre = {}; //idem
+
+        for (let i = 0; i < livres.length; i++)
+        {
+            if (!livres[i]) 
+                continue;
+
+            let genre = livres[i].genre;
+            let format = livres[i].format;
+
+            if (nbformat[format] === undefined)
+                nbformat[format] = 1;
+            else
+                nbformat[format]++;
+
+            if (nbGenre[genre] === undefined)
+                nbGenre[genre] = 1;
+            else
+                nbGenre[genre]++;
+        }
+        
+        // si format idenntique alors 2 points de plus
+        for (let format in nbformat) 
+        {
+            if (nbformat[format] >= 2)
+                score += 2;
+        } 
+        
+        // Si genres identiques alors 3 points de plus
+        for (let genre in nbGenre) 
+        {
+            if (nbGenre[genre] >= 2)
+                score += 3;
+        } 
+
+        return score;
+    }
+
+    function scoreTot() 
+    {
+        let total = 0;
+
+        for (let i = 0; i < etageres.length; i++) {
+            let s = score(etageres[i]);
+            console.log("Étagère", i, "score =", s);
+            total += s;
+        }
+
+        console.log("Score total =", total);
+        const label = document.getElementById('scoreJ')
+        label.textContent = total ; 
+        return;
+    }
+
+
+    // Chargement initial
+    document.addEventListener('DOMContentLoaded', chargerLivres);
+    </script>
+</head>
+
+
+<body>
+    <!-- Panneau de gauche : contrôles / chat -->
+    <div class="left-panel">
+        <!-- Section des joueurs -->
+        <section id="joueurs">
+            <div>
+                Joueurs : <label id="listeJoueurs"></label>
+            </div>
+            <div style="margin-top: 10px;">
+                Votre nom <input id="nomJ" type="text" />
+                Votre numéro : <label id="numJ"></label>
+                Votre Score : <label id="scoreJ">0</label>
+                Tour n° <label id="tourActuel"></label>
+                <button type="button" id="btentree" onclick="entrerDansLaPartie()">Entrer dans la partie</button>
+                <button type="button" id="btsortie" disabled onclick="quitterLaPartie()">Quitter la partie</button>
+                <button onclick="initialiserBibliotheque()">Lancer la partie</button>
+            </div>
+        </section>
+
+        <hr/>
+
+        <!-- Message du serveur -->
+        <section id="champMessageServeur">
+            <div>Message du serveur :</div>
+            <label id="messageServeur"></label>
+        </section>
+
+        <hr/>
+
+        <!-- Section chat -->
+        <section id="champMessage">
+            <div>
+                <label for="message">Votre message</label>
+                <input id="message" type="text" class="message-input" onchange="envoiMessage(this)"/>
+            </div>
+            <textarea id="messages" rows="20" cols="25" readonly></textarea>
+        </section>
+    </div>
+
+    <!-- Panneau de droite : visualisation -->
+    <div class="right-panel">
+        <svg id="bibliotheque" width="100%" height="600"></svg>
+    </div>
+</body>
+</html>
