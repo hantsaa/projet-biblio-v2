@@ -5,7 +5,7 @@ Participants au projet :
 - **RAMEFISON Hantsa**, *Groupe C*
 
 ****
-`Aperçus du projet : `
+`Aperçus du projet :`
 
 ![alt text](image.png)
 
