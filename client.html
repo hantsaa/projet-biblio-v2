@@ -95,7 +95,7 @@
         });
 
         socket.on('entree', data => {
-            console.log("Le serveur confirme mon entrée avec numJoueur=" + data.numJoueur);
+            console.log("Le serveur confirme mon entrée de numJoueur=" + data.numJoueur);
             numJoueur = data.numJoueur;
             btentree.disabled = true;
             btsortie.disabled = false;
@@ -425,14 +425,14 @@
                 nbGenre[genre]++;
         }
         
-        // si format idenntique alors 2 points de plus
+        // si format idenntique alors 2 pts de +
         for (let format in nbformat) 
         {
             if (nbformat[format] >= 2)
                 score += 2;
         } 
         
-        // Si genres identiques alors 3 points de plus
+        // Si genres identiques alors 3 pts de +
         for (let genre in nbGenre) 
         {
             if (nbGenre[genre] >= 2)
@@ -466,9 +466,10 @@
 
 
 <body>
-    <!-- Panneau de gauche : contrôles / chat -->
-    <div class="left-panel">
-        <!-- Section des joueurs -->
+    <!-- à gauche on a tout ce qui est affichage de joueurs, scores, tour, 
+     message du serveur et chat-->
+    <div class="left-panel">  
+        <!-- champ d'affichage des joueurs -->
         <section id="joueurs">
             <div>
                 Joueurs : <label id="listeJoueurs"></label>
@@ -486,7 +487,7 @@
 
         <hr/>
 
-        <!-- Message du serveur -->
+        <!-- champ des messages du serveur -->
         <section id="champMessageServeur">
             <div>Message du serveur :</div>
             <label id="messageServeur"></label>
@@ -494,7 +495,7 @@
 
         <hr/>
 
-        <!-- Section chat -->
+        <!-- section du chat -->
         <section id="champMessage">
             <div>
                 <label for="message">Votre message</label>
@@ -504,7 +505,7 @@
         </section>
     </div>
 
-    <!-- Panneau de droite : visualisation -->
+    <!-- à droite on a la bibliotheque et la caisse -->
     <div class="right-panel">
         <svg id="bibliotheque" width="100%" height="600"></svg>
     </div>
