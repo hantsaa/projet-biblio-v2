@@ -60,8 +60,9 @@ io.on('connection', (socket) => {
                 });
 
                 // si le nb minimal de joueurs pouvant jouer est atteint, la partie peut commencer
-                // chaque joueur ayant un jeton, ils jouent donc selon un ordre precis : 
+                // chaque joueur ayant un jeton (de façon croissante), ils jouent donc selon un ordre precis : 
                 // le premier joueur ayant rejoint a un jeton 0 donc c'est lui qui joue en premier
+                // le jeton est incrémenté à chaque fois qu'un joueur rentre
 
                 if (joueurs.length === nbJoueurs) {
                     jeton = 0;

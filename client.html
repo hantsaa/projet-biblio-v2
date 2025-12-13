@@ -13,7 +13,7 @@
         const socket = io();
 
 // ====================================
-// 1. Gestion de la bibliothèque
+// Gestion de la bibliothèque
 // ====================================
         let livres = [];
         
@@ -32,7 +32,7 @@
 
 
 // ====================================
-// 2. Gestion des joueurs
+// Gestion de l'entrée/sortie des joueurs
 // ====================================
         let numJoueur = -1;
         let joueurCourant = -1;
@@ -46,7 +46,8 @@
         function entrerDansLaPartie()
         {
             let nom = nomJ.value;
-            if (nom && nom.trim()) {
+            if (nom && nom.trim())
+            { // on utilise .trim() pour retirer d'eventuels blancs en debut et/ou en fin de chaine
                 console.log("Entrée de " + nom);
                 socket.emit('entree', nom);
             }
@@ -55,7 +56,8 @@
         function quitterLaPartie() 
         {
             let nom = nomJ.value;
-            if (nom && nom.trim()) {
+            if (nom && nom.trim())
+            {
                 console.log("Sortie de " + nom);
                 socket.emit('sortie', nom);
             }
@@ -63,11 +65,12 @@
 
 
 // ====================================
-// 3. Gestion du chat
+// Gestion du chat
 // ====================================
         function envoiMessage(input) 
         {
-            if (input.value.trim()) {
+            if (input.value.trim()) 
+            { // idem, on utilise .trim() pour retirer les blancs en debut et/ou fin de chaine
                 console.log("Envoi du message :", input.value);
                 socket.emit("message", {
                     'numJoueur': numJoueur,
@@ -80,15 +83,15 @@
         {
             let textarea = document.getElementById('messages');
             textarea.value += (textarea.value ? '\n' : '') + message;
-            textarea.scrollTop = textarea.scrollHeight;
+            textarea.scrollTop = textarea.scrollHeight; 
+            // force la zone de message à scroller vers le bas pour toujours montrer le dernier messgae mis
         }
 
 
 // ====================================
-// 4. Écouteurs Socket.IO
+// ecouteurs socket.io
 // ====================================
         
-        // Événements liés aux joueurs
         socket.on('joueurs', nomsJoueurs => {
             console.log(`Noms des joueurs reçus du serveur : ${nomsJoueurs}`);
             listeJoueurs.value = nomsJoueurs;
@@ -99,6 +102,7 @@
             numJoueur = data.numJoueur;
             btentree.disabled = true;
             btsortie.disabled = false;
+            btlancer.disabled = false;
             listeJoueurs.textContent = data.nomsJoueurs;
             numJ.textContent = data.numJoueur;
         });
@@ -112,8 +116,15 @@
         socket.on('tour', data => {
             joueurCourant = data.joueurCourant;
             console.log("Nouveau tour, joueur courant =", joueurCourant);
-            document.getElementById('messageServeur')
+            if (joueurCourant != null){
+                document.getElementById('messageServeur')
                     .textContent = "Au tour du joueur " + joueurCourant;
+            }
+            else{
+                document.getElementById('messageServeur')
+                    .textContent = "Il n'y a pas de joueurs, rentrez dans la partie avec un nom svp !"; 
+            }
+            
         });
 
 
@@ -124,6 +135,7 @@
             numJ.textContent = "";
             btentree.disabled = false;
             btsortie.disabled = true;
+            btlancer.disabled = true;
             listeJoueurs.textContent = data.nomsJoueurs;
             document.getElementById('messageServeur').textContent = "";
         });
@@ -152,7 +164,7 @@
 
 
 // ====================================
-// 5. Visu D3.js
+// d3
 // ====================================
         let tourActuel = 0;
         let intervalTours = null;
@@ -308,40 +320,42 @@
 
         function depoLivre(etagere, indexAncrage)
         {
-            if (numJoueur !== joueurCourant) {
-                alert("Soit ce n'est pas votre tour, soit il n'y a pas assez de joueurs (ici 2 !)");    
+            if (joueurCourant != null)
+            {
+                if (numJoueur !== joueurCourant) {
+                alert("Erreur :\n- Soit ce n'est pas votre tour\n- Soit il n'y a pas assez de joueurs (ici 2 !)");    
                 return;
+                }
+
+                if (!livreSelec) return;   // si aucun livre sélectionné on fait rien
+
+                const ancrage = etagere.ancrages[indexAncrage];
+
+                if (ancrage.pleins) return;
+
+                if (livreSelec.ancrage)
+                    livreSelec.ancrage.pleins = false;
+
+                // recuperer le livre stocké dans le dom
+                const dataLivre = livreSelec.__dataLivre;
+
+                d3.select(livreSelec)
+                    .attr("x", ancrage.x - largeurLivre / 2)
+                    .attr("y", ancrage.y - hauteurLivre);
+
+                ancrage.pleins = true;
+                livreSelec.ancrage = ancrage;
+
+                etagere.livres[indexAncrage] = dataLivre;
+                const points = scoreAutourPosition(etagere, indexAncrage);
+                scoreTot();
+
+                socket.emit('coupJoue', { numJoueur });
+
+                livreSelec = null;
+                tourActuel++;
+                document.getElementById('tourActuel').textContent = tourActuel;    
             }
-
-            if (!livreSelec) return;   // si aucun livre sélectionné on fait rien
-
-            const ancrage = etagere.ancrages[indexAncrage];
-
-            if (ancrage.pleins)
-                return;
-
-            if (livreSelec.ancrage)
-                livreSelec.ancrage.pleins = false;
-
-            // recuperer le livre stocké dans le dom
-            const dataLivre = livreSelec.__dataLivre;
-
-            d3.select(livreSelec)
-                .attr("x", ancrage.x - largeurLivre / 2)
-                .attr("y", ancrage.y - hauteurLivre);
-
-            ancrage.pleins = true;
-            livreSelec.ancrage = ancrage;
-
-            etagere.livres[indexAncrage] = dataLivre;
-            const points = scoreAutourPosition(etagere, indexAncrage);
-            scoreTot();
-
-            socket.emit('coupJoue', { numJoueur });
-
-            livreSelec = null;
-            tourActuel++;
-            document.getElementById('tourActuel').textContent = tourActuel;
         }
 
         function scoreAutourPosition(etagere, index)
@@ -355,15 +369,15 @@
             const gauche = index > 0 ? livres[index - 1] : null;
             const droite = index < livres.length - 1 ? livres[index + 1] : null;
 
-            // meme genre
+            // livres meme genre : socre + 3
             if (gauche && gauche.genre === livreCentral.genre) score += 3;
             if (droite && droite.genre === livreCentral.genre) score += 3;
 
-            // meme auteur
+            // livres même auteur : score + 4
             if (gauche && gauche.nom === livreCentral.nom) score += 4;
             if (droite && droite.nom === livreCentral.nom) score += 4;
 
-            // meme litterature
+            // livres meme litterature : score +5
             if (gauche && gauche.littérature === livreCentral.littérature) score += 5;
             if (droite && droite.littérature === livreCentral.littérature) score += 5;
 
@@ -387,12 +401,12 @@
                 tourActuel++;
                 document.getElementById('tourActuel').textContent = tourActuel;
                 remplirCaisse();
-            }, 10000);
+            }, 10000); // 10 s avant la tournée de nouveaux livres 
         }
 
 
 // ====================================
-// 6. Gestion du score 
+// gestion du score 
 // ====================================
 
     function score(etagere)
@@ -481,7 +495,7 @@
                 Tour n° <label id="tourActuel"></label>
                 <button type="button" id="btentree" onclick="entrerDansLaPartie()">Entrer dans la partie</button>
                 <button type="button" id="btsortie" disabled onclick="quitterLaPartie()">Quitter la partie</button>
-                <button onclick="initialiserBibliotheque()">Lancer la partie</button>
+                <button type="button" id="btlancer" disabled onclick="initialiserBibliotheque()">Lancer la partie</button>
             </div>
         </section>
 
