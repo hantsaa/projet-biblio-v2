@@ -30,6 +30,8 @@ Dans deux navigateurs différents, quand le serveur est lancé, taper :
 
 Vous aurez alors un visuel du chat, sur les deux fenêtres, sans la bibliothèque car la partie n'a pas encore été lancée.
 
+****
+
 Le jeu se joue à `deux` (que l'on peut changer dans ***serveur.io.js*** *(var nbJoueurs = 2)* si vous souhaitez, mais pour faciliter le projet, on a choisi 2 joueurs initialement) donc vous avez besoin de rentrer `un nom dans chaque navigateur` pour pouvoir :
 
 - Entrer dans la partie puis  
@@ -137,3 +139,4 @@ Actuellement, le score affiché est un score global pour la partie, donc pas par
 ![alt text](img/image-1.png)  
 ![alt text](img/image-2.png)  
 ![alt text](img/image-3.png)
+
