@@ -1,0 +1,25 @@
+{
+  "name": "projet-biblio-v2",
+  "version": "1.0.0",
+  "description": "Participants au projet : \r - **GUY Alice**, *Groupe C*\r - **RAMEFISON Hantsa**, *Groupe C*",
+  "main": "serveur.io.js",
+  "scripts": {
+    "start": "node serveur.io.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hantsaa/projet-biblio-v2.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/hantsaa/projet-biblio-v2/issues"
+  },
+  "homepage": "https://github.com/hantsaa/projet-biblio-v2#readme",
+  "dependencies": {
+    "express": "^5.2.1",
+    "socket.io": "^4.8.1"
+  }
+}
