@@ -105,6 +105,11 @@
             btlancer.disabled = false;
             listeJoueurs.textContent = data.nomsJoueurs;
             numJ.textContent = data.numJoueur;
+            if (joueurs.length < nbJoueurs)
+            {
+                console.log("Il manque " + nbJoueurs - joueurs.length + " joueurs pour pouvoir jouer.");
+                io.emit('messageServeur', "Pas assez de joeurs pour commencer la partie")
+            }
         });
 
         socket.on('entreeAutreJoueur', data => {
@@ -157,10 +162,17 @@
             document.getElementById('message').value = "";
         });
 
+        socket.on('manqueJoueurs', data => {
+            console.log(`Il manque ${data.manque} joueur(s)`);
+            document.getElementById('messageServeur').textContent = data.manque > 0 ? `Il manque ${data.manque} joueur pour commencer la partie` : '';
+            btlancer.disabled = (data.manque > 0);
+        });
+
         socket.on('messageServeur', message => {
             console.log("Message serveur :", message);
             document.getElementById('messageServeur').textContent = message;
         });
+
 
 
 // ====================================
@@ -313,8 +325,7 @@
 
                 rect.node().ancrage = ancrage; // rect.node() permet de convertir l'objet d3 en élément du dom réel
                 // donc -> stockage de livre sur le dom
-                rect.node().__dataLivre = li; // on crée un attribut __dataLivre de l'element du dom réel par li, li correspond à l'objet livre au complet et on le place dans __dataLivre
-                // ref : https://d3-wiki.readthedocs.io/zh-cn/master/Selections/
+                rect.node().setAttribute('data-livre', JSON.stringify(li)); // on stocke l'objet livre au complet
             });
 ;
         }
@@ -345,7 +356,7 @@
                     livreSelec.ancrage.pleins = false;
 
                 // recuperer le livre stocké dans le dom
-                const dataLivre = livreSelec.__dataLivre;
+                const dataLivre = JSON.parse(livreSelec.getAttribute('data-livre'));
 
                 d3.select(livreSelec)
                     .attr("x", ancrage.x - largeurLivre / 2)
@@ -396,21 +407,21 @@
 
         function initialiserBibliotheque()
         {
+            // initialisation de la bibliothèque appelé quand le boutton 'lancer la partie' est cliqué
             tourActuel = 1;
+            // appel de toutes les fonctions qui dessinent la biblio ainsi que la caisse + remplissage de la caisse de livres
             dessinerEtageres();
             dessinerAncrages();
             dessinerCaisse();
             remplirCaisse();
             document.getElementById('tourActuel').textContent = tourActuel;
 
-            if (intervalTours !== null)
-                clearInterval(intervalTours);
+            if (intervalTours !== null) clearInterval(intervalTours); // arreter un intervalle existant avant d'en creer un nouveau
 
             intervalTours = setInterval(() => {
-                tourActuel++;
-                document.getElementById('tourActuel').textContent = tourActuel;
+                console.log("rajout de nouveaux livres")
                 remplirCaisse();
-            }, 10000); // 10 s avant la tournée de nouveaux livres 
+            }, 10000); // 10 s d'intervalle avant la tournée de nouveaux livres 
         }
 
 
@@ -426,8 +437,8 @@
         if (livres.length <= 1)
             return 0;
     
-        let nbformat = {}; //on compte les nombres de format similaires
-        let nbGenre = {}; //idem
+        let nbformat = {}; //pour nous permettre de compter les nombres de format similaires
+        let nbGenre = {}; //idem sur les genres
 
         for (let i = 0; i < livres.length; i++)
         {
@@ -487,6 +498,8 @@
     </script>
 </head>
 
+
+<!-- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx PARTI HTML xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-->
 
 <body>
     <!-- à gauche on a tout ce qui est affichage de joueurs, scores, tour, 

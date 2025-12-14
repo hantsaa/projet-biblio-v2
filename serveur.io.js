@@ -35,7 +35,7 @@ io.on('connection', (socket) => {
     });
 
    socket.on('entree', nomJoueur => {
-        console.log("Entrée dans la partie de " + nomJoueur);
+       console.log("Entrée dans la partie de " + nomJoueur);
 
         // si le nb de joueurs maximal n'est pas encore atteint
         if (joueurs.length < nbJoueurs) 
@@ -59,6 +59,11 @@ io.on('connection', (socket) => {
                     nomsJoueurs: nomsJoueurs
                 });
 
+                // si pas assez de joeurs
+                const manque = nbJoueurs - joueurs.length;
+                io.emit('manqueJoueurs', { manque });
+                io.emit('messageServeur', manque > 0 ? `Il manque ${manque} joueur(s) pour commencer la partie` : '');
+
                 // si le nb minimal de joueurs pouvant jouer est atteint, la partie peut commencer
                 // chaque joueur ayant un jeton (de façon croissante), ils jouent donc selon un ordre precis : 
                 // le premier joueur ayant rejoint a un jeton 0 donc c'est lui qui joue en premier
@@ -69,6 +74,7 @@ io.on('connection', (socket) => {
                     console.log("Le jeton passe à 0, la partie peut commencer");
                     io.emit('messageServeur', 'la partie peut commencer');
                     io.emit('tour', { joueurCourant: jeton });
+                    io.emit('manqueJoueurs', { manque: 0 });
                 }
             } 
             else
@@ -107,6 +113,10 @@ io.on('connection', (socket) => {
                                     {'nomJoueur':nomJoueur, // Pour information
                                     'numJoueur': index,
                                     'nomsJoueurs':nomsJoueurs});
+            // informer tous les clients du nombre de joueurs manquants après la sortie
+            const manque = nbJoueurs - joueurs.length;
+            io.emit('manqueJoueurs', { manque });
+            io.emit('messageServeur', manque > 0 ? `Il manque ${manque} joueur(s) pour commencer la partie` : '');
         }
         else socket.emit('messageServeur', 'Joueur inconnu');
     });
