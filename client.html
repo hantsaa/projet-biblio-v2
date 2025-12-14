@@ -105,11 +105,6 @@
             btlancer.disabled = false;
             listeJoueurs.textContent = data.nomsJoueurs;
             numJ.textContent = data.numJoueur;
-            if (joueurs.length < nbJoueurs)
-            {
-                console.log("Il manque " + nbJoueurs - joueurs.length + " joueurs pour pouvoir jouer.");
-                io.emit('messageServeur', "Pas assez de joeurs pour commencer la partie")
-            }
         });
 
         socket.on('entreeAutreJoueur', data => {

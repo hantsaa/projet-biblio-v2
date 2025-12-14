@@ -122,7 +122,7 @@ Pour la partie score, nous avons deux niveaux :
    - On ajoute des points si un même format ou un même genre apparaît au moins deux fois sur l’étagère
    - `scoreTot()` additionne les scores de toutes les étagères et affiche le score total dans `scoreJ`
 
-Actuellement, le score affiché est un score global pour la partie, donc pas par joueur, et donc considérons que c'est un jeu de cooperation
+Actuellement le score affiché est un score global pour la partie.
 
 ---
 
@@ -131,12 +131,35 @@ Actuellement, le score affiché est un score global pour la partie, donc pas par
 - L’ordre alphabétique complet des auteurs sur un rayonnage n’est pas entièrement implémenté : nous utilisons déjà les auteurs pour établir le score mais nous ne trions pas visuellement les livres par ordre alphabétique
 - Le score affiché est global et n’est pas encore séparé par joueur (mais la base est là pour l’étendre), comme dit précédemment
 
----
 
-## Aperçus du projet :
+--- 
 
-![alt text](img/image.png)  
-![alt text](img/image-1.png)  
-![alt text](img/image-2.png)  
-![alt text](img/image-3.png)
 
+# Captures d'écran du projet :
+
+## Run du serveur :
+<img src="./img/terminal_serv1.png" alt="terminal serveur 1" />
+
+## Rentrée de joueurs
+
+### Hantsa rentre dans la partie : 
+<img src="./img/vue-entrer-joueur1.png" alt="entrée joueur1" />
+<img src="./img/terminal-vue-entrer-joueur1.png" alt="terminal entrée joueur1" />
+
+    Comme vous pouvez le voir, le lancement de la partie ne peut se faire que lorsque le nombre de joueurs nécessaire (nbJoueurs > 1) sera atteint.
+
+### Alice rentre dans la partie : 
+<img src="./img/vue-entrer-joueur2.png" alt="entrée joueur2" />
+<img src="./img/terminal-vue-entrer-joueur2.png" alt="terminal entrée joueur2" />
+
+    Désormais, la partie pourra se lancer car le nbJoueurs max est atteint.
+
+### Lancement de la partie
+<img src="./img/partie-lancée-j1.png" alt="lancement partie j1" />
+<img src="./img/terminal_partie_lancée-j1.png" alt="terminal lancement partie j1" />
+
+### Après quelques essais pour poser des livres, le score augmente, et si ce n'est pas votre tour, un message d'erreur s'affiche en grand : 
+<img src="./img/pas_votre_tour.png" alt="pas votre tour" />
+
+### Si un joueur quitte la partie, le serveur renvoie un message sur le nombre de joueurs requis et le message d'erreur de ci-dessus se montre si le joueur tente de placer un livre sur l'étagère :
+<img src="./img/hantsa-quitte-partie.png" alt="quit" />
