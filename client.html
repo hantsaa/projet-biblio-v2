@@ -231,7 +231,7 @@
                     svg.append("circle")
                         .attr("cx", ancrX)
                         .attr("cy", ancrY)
-                        .attr("r", 3)
+                        .attr("r", 4)
                         .attr("fill", "#515151")
                         .on("click", () => {
                             if (livreSelec) {
@@ -308,23 +308,31 @@
                     .on("click", function() {
                         svg.selectAll(".livre").classed("selected", false);
                         d3.select(this).classed("selected", true);
-                        livreSelec = this;
+                        livreSelec = this; // "this" correspond à l'element dom du rectangle cliqué
                     });
 
-                rect.node().ancrage = ancrage;
-                // stockage de livre sur le dom
-                rect.node().__dataLivre = li;
+                rect.node().ancrage = ancrage; // rect.node() permet de convertir l'objet d3 en élément du dom réel
+                // donc -> stockage de livre sur le dom
+                rect.node().__dataLivre = li; // on crée un attribut __dataLivre de l'element du dom réel par li, li correspond à l'objet livre au complet et on le place dans __dataLivre
+                // ref : https://d3-wiki.readthedocs.io/zh-cn/master/Selections/
             });
 ;
         }
 
         function depoLivre(etagere, indexAncrage)
         {
+            // si il y a au moins un joueur, donc joueur different de null
             if (joueurCourant != null)
             {
-                if (numJoueur !== joueurCourant) {
-                alert("Erreur :\n- Soit ce n'est pas votre tour\n- Soit il n'y a pas assez de joueurs (ici 2 !)");    
-                return;
+                // si le numero du joueur est different du du numero du joueur qui est censé jouer
+                /* ou bien le numero du joueur courant est égal à -1, c'est a dire qu'il n'y a pas assez de joueurs
+                    dans la partie, autrement dit : le jeton n'est pas encore passé à 0 dans le serveur
+                    voir ligne 67 à 72 dans serveur.io.js
+                */
+                if (numJoueur !== joueurCourant || joueurCourant === -1)
+                {
+                    alert("Erreur :\n- Soit ce n'est pas votre tour\n- Soit il n'y a pas assez de joueurs (ici 2 !)");    
+                    return;
                 }
 
                 if (!livreSelec) return;   // si aucun livre sélectionné on fait rien
@@ -346,9 +354,10 @@
                 ancrage.pleins = true;
                 livreSelec.ancrage = ancrage;
 
+                // stockage des données du livre selectionné dans l'étagère selon l'indice que le joueur veut
                 etagere.livres[indexAncrage] = dataLivre;
                 const points = scoreAutourPosition(etagere, indexAncrage);
-                scoreTot();
+                scoreTot(); // on appelle scoreTot(), qui est un score commun à tous les joueurs
 
                 socket.emit('coupJoue', { numJoueur });
 
